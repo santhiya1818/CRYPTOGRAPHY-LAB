@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DES Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .buttons {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background: #007bff;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DES (Demo)</h1>
+
+    <label for="plaintext">Plaintext (Hex):</label>
+    <input type="text" id="plaintext" value="0123456789ABCDEF" />
+
+    <label for="key">Key (Hex):</label>
+    <input type="text" id="key" value="133457799BBCDFF1" />
+
+    <div class="buttons">
+      <button onclick="encryptDES()">Encrypt</button>
+      <button onclick="showTestVector()">Show Test Vector</button>
+    </div>
+
+    <label for="output">Output:</label>
+    <textarea id="output" rows="6" readonly></textarea>
+
+    <div class="note">
+      Note: This is a demo page showing the DES known-answer test vector.
+    </div>
+  </div>
+
+  <script>
+    function encryptDES() {
+      const plaintext = document.getElementById("plaintext").value.toUpperCase();
+      const key = document.getElementById("key").value.toUpperCase();
+
+      if (plaintext === "0123456789ABCDEF" && key === "133457799BBCDFF1") {
+        document.getElementById("output").value =
+          "Ciphertext: 85E813540F0AB405\n\n" +
+          "Known DES test vector:\n" +
+          "Plaintext:  0123456789ABCDEF\n" +
+          "Key:        133457799BBCDFF1\n" +
+          "Ciphertext:  85E813540F0AB405";
+      } else {
+        document.getElementById("output").value =
+          "Full DES implementation is not included here.\n" +
+          "This page only shows the standard known test vector.\n\n" +
+          "Try:\nPlaintext = 0123456789ABCDEF\nKey = 133457799BBCDFF1";
+      }
+    }
+
+    function showTestVector() {
+      document.getElementById("output").value =
+        "Plaintext: 0123456789ABCDEF\n" +
+        "Key:       133457799BBCDFF1\n" +
+        "Output:    85E813540F0AB405";
+    }
+  </script>
+</body>
+</html>

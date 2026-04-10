@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSA Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .buttons {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background: #007bff;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RSA</h1>
+
+    <label for="p">Prime p:</label>
+    <input type="number" id="p" value="3" />
+
+    <label for="q">Prime q:</label>
+    <input type="number" id="q" value="11" />
+
+    <label for="e">Public exponent e:</label>
+    <input type="number" id="e" value="7" />
+
+    <label for="m">Message M:</label>
+    <input type="number" id="m" value="4" />
+
+    <div class="buttons">
+      <button onclick="calculateRSA()">Calculate</button>
+    </div>
+
+    <label for="output">Output:</label>
+    <textarea id="output" rows="10" readonly></textarea>
+
+    <div class="note">
+      This shows RSA key generation, encryption, and decryption steps.
+    </div>
+  </div>
+
+  <script>
+    function gcd(a, b) {
+      while (b !== 0) {
+        let t = b;
+        b = a % b;
+        a = t;
+      }
+      return a;
+    }
+
+    function modPow(base, exp, mod) {
+      let result = 1;
+      base = base % mod;
+      while (exp > 0) {
+        if (exp % 2 === 1) result = (result * base) % mod;
+        base = (base * base) % mod;
+        exp = Math.floor(exp / 2);
+      }
+      return result;
+    }
+
+    function modInverse(e, phi) {
+      for (let d = 1; d < phi; d++) {
+        if ((e * d) % phi === 1) return d;
+      }
+      return null;
+    }
+
+    function calculateRSA() {
+      const p = parseInt(document.getElementById("p").value);
+      const q = parseInt(document.getElementById("q").value);
+      const e = parseInt(document.getElementById("e").value);
+      const m = parseInt(document.getElementById("m").value);
+
+      const n = p * q;
+      const phi = (p - 1) * (q - 1);
+
+      let output = `Step 1: n = p × q = ${p} × ${q} = ${n}\n`;
+      output += `Step 2: φ(n) = (p-1)(q-1) = (${p - 1}) × (${q - 1}) = ${phi}\n`;
+
+      if (gcd(e, phi) !== 1) {
+        output += `\nInvalid e. gcd(${e}, ${phi}) ≠ 1. Choose another e.`;
+        document.getElementById("output").value = output;
+        return;
+      }
+
+      const d = modInverse(e, phi);
+
+      output += `Step 3: Public key = (${e}, ${n})\n`;
+      output += `Step 4: Private key = (${d}, ${n})\n`;
+
+      const c = modPow(m, e, n);
+      output += `Step 5: Encrypt C = M^e mod n = ${m}^${e} mod ${n} = ${c}\n`;
+
+      const decrypted = modPow(c, d, n);
+      output += `Step 6: Decrypt M = C^d mod n = ${c}^${d} mod ${n} = ${decrypted}\n`;
+
+      document.getElementById("output").value = output;
+    }
+  </script>
+</body>
+</html>

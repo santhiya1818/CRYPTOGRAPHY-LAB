@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Playfair Cipher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .buttons {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background: #007bff;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .matrix {
+      margin-top: 15px;
+      display: grid;
+      grid-template-columns: repeat(5, 50px);
+      gap: 5px;
+      width: fit-content;
+    }
+
+    .cell {
+      width: 50px;
+      height: 50px;
+      background: #e9ecef;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Playfair Cipher</h1>
+
+    <label for="text">Text:</label>
+    <textarea id="text" rows="4" placeholder="Enter plaintext or ciphertext"></textarea>
+
+    <label for="key">Key:</label>
+    <input type="text" id="key" value="MONARCHY" placeholder="Enter keyword" />
+
+    <div class="buttons">
+      <button onclick="encryptPlayfair()">Encrypt</button>
+      <button onclick="decryptPlayfair()">Decrypt</button>
+      <button onclick="showMatrix()">Show Matrix</button>
+    </div>
+
+    <label>Matrix:</label>
+    <div id="matrix" class="matrix"></div>
+
+    <label for="output">Output:</label>
+    <textarea id="output" rows="4" readonly></textarea>
+  </div>
+
+  <script>
+    function prepareText(text) {
+      text = text.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+      let result = "";
+      let i = 0;
+
+      while (i < text.length) {
+        let a = text[i];
+        let b = text[i + 1];
+
+        if (!b) {
+          result += a + "X";
+          i++;
+        } else if (a === b) {
+          result += a + "X";
+          i++;
+        } else {
+          result += a + b;
+          i += 2;
+        }
+      }
+
+      return result;
+    }
+
+    function buildMatrix(key) {
+      key = key.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+      let seen = new Set();
+      let letters = "";
+
+      for (let ch of key + "ABCDEFGHIKLMNOPQRSTUVWXYZ") {
+        if (!seen.has(ch)) {
+          seen.add(ch);
+          letters += ch;
+        }
+      }
+
+      let matrix = [];
+      for (let i = 0; i < 5; i++) {
+        matrix.push(letters.slice(i * 5, i * 5 + 5).split(""));
+      }
+      return matrix;
+    }
+
+    function findPos(matrix, ch) {
+      for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 5; j++) {
+          if (matrix[i][j] === ch) return [i, j];
+        }
+      }
+      return null;
+    }
+
+    function playfairEncrypt(text, key) {
+      let matrix = buildMatrix(key);
+      text = prepareText(text);
+      let result = "";
+
+      for (let i = 0; i < text.length; i += 2) {
+        let a = text[i];
+        let b = text[i + 1];
+        let [r1, c1] = findPos(matrix, a);
+        let [r2, c2] = findPos(matrix, b);
+
+        if (r1 === r2) {
+          result += matrix[r1][(c1 + 1) % 5];
+          result += matrix[r2][(c2 + 1) % 5];
+        } else if (c1 === c2) {
+          result += matrix[(r1 + 1) % 5][c1];
+          result += matrix[(r2 + 1) % 5][c2];
+        } else {
+          result += matrix[r1][c2];
+          result += matrix[r2][c1];
+        }
+      }
+
+      return result;
+    }
+
+    function playfairDecrypt(text, key) {
+      let matrix = buildMatrix(key);
+      text = text.toUpperCase().replace(/[^A-Z]/g, "").replace(/J/g, "I");
+      let result = "";
+
+      for (let i = 0; i < text.length; i += 2) {
+        let a = text[i];
+        let b = text[i + 1];
+        let [r1, c1] = findPos(matrix, a);
+        let [r2, c2] = findPos(matrix, b);
+
+        if (r1 === r2) {
+          result += matrix[r1][(c1 + 4) % 5];
+          result += matrix[r2][(c2 + 4) % 5];
+        } else if (c1 === c2) {
+          result += matrix[(r1 + 4) % 5][c1];
+          result += matrix[(r2 + 4) % 5][c2];
+        } else {
+          result += matrix[r1][c2];
+          result += matrix[r2][c1];
+        }
+      }
+
+      return result;
+    }
+
+    function renderMatrix(matrix) {
+      const matrixDiv = document.getElementById("matrix");
+      matrixDiv.innerHTML = "";
+      for (let row of matrix) {
+        for (let ch of row) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.textContent = ch;
+          matrixDiv.appendChild(cell);
+        }
+      }
+    }
+
+    function showMatrix() {
+      const key = document.getElementById("key").value;
+      const matrix = buildMatrix(key);
+      renderMatrix(matrix);
+    }
+
+    function encryptPlayfair() {
+      const text = document.getElementById("text").value;
+      const key = document.getElementById("key").value;
+      document.getElementById("output").value = playfairEncrypt(text, key);
+      showMatrix();
+    }
+
+    function decryptPlayfair() {
+      const text = document.getElementById("text").value;
+      const key = document.getElementById("key").value;
+      document.getElementById("output").value = playfairDecrypt(text, key);
+      showMatrix();
+    }
+
+    showMatrix();
+  </script>
+</body>
+</html>

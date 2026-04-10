@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Euclidean Algorithm</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background: #007bff;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Euclidean Algorithm</h1>
+
+    <label for="num1">Number 1:</label>
+    <input type="number" id="num1" value="48" />
+
+    <label for="num2">Number 2:</label>
+    <input type="number" id="num2" value="18" />
+
+    <button onclick="runEuclidean()">Run</button>
+
+    <label for="output">Output:</label>
+    <textarea id="output" rows="6" readonly></textarea>
+
+    <div class="note">
+      This shows the division steps until the remainder becomes 0.
+    </div>
+  </div>
+
+  <script>
+    function runEuclidean() {
+      let a = parseInt(document.getElementById("num1").value);
+      let b = parseInt(document.getElementById("num2").value);
+      let steps = "";
+
+      while (b !== 0) {
+        let q = Math.floor(a / b);
+        let r = a % b;
+        steps += `${a} = ${b} × ${q} + ${r}\n`;
+        a = b;
+        b = r;
+      }
+
+      steps += `\nGCD = ${a}`;
+      document.getElementById("output").value = steps;
+    }
+  </script>
+</body>
+</html>

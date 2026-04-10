@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Affine Cipher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .buttons {
+      margin-top: 15px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+      background: #007bff;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .note {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Affine Cipher</h1>
+
+    <label for="text">Text:</label>
+    <textarea id="text" rows="4" placeholder="Enter plaintext or ciphertext"></textarea>
+
+    <label for="a">Key a:</label>
+    <input type="number" id="a" value="5" />
+
+    <label for="b">Key b:</label>
+    <input type="number" id="b" value="8" />
+
+    <div class="buttons">
+      <button onclick="encryptAffine()">Encrypt</button>
+      <button onclick="decryptAffine()">Decrypt</button>
+    </div>
+
+    <label for="output">Output:</label>
+    <textarea id="output" rows="4" readonly></textarea>
+
+    <div class="note">
+      Note: a must be coprime with 26.
+    </div>
+  </div>
+
+  <script>
+    function mod(n, m) {
+      return ((n % m) + m) % m;
+    }
+
+    function gcd(a, b) {
+      while (b !== 0) {
+        let t = b;
+        b = a % b;
+        a = t;
+      }
+      return a;
+    }
+
+    function modInverse(a, m) {
+      a = mod(a, m);
+      for (let x = 1; x < m; x++) {
+        if ((a * x) % m === 1) return x;
+      }
+      return null;
+    }
+
+    function affineEncrypt(text, a, b) {
+      text = text.toUpperCase();
+      let result = "";
+
+      for (let ch of text) {
+        if (ch >= "A" && ch <= "Z") {
+          let x = ch.charCodeAt(0) - 65;
+          let y = mod(a * x + b, 26);
+          result += String.fromCharCode(y + 65);
+        } else {
+          result += ch;
+        }
+      }
+
+      return result;
+    }
+
+    function affineDecrypt(text, a, b) {
+      text = text.toUpperCase();
+      let aInv = modInverse(a, 26);
+
+      if (aInv === null) {
+        return "Invalid key a. It must be coprime with 26.";
+      }
+
+      let result = "";
+
+      for (let ch of text) {
+        if (ch >= "A" && ch <= "Z") {
+          let y = ch.charCodeAt(0) - 65;
+          let x = mod(aInv * (y - b), 26);
+          result += String.fromCharCode(x + 65);
+        } else {
+          result += ch;
+        }
+      }
+
+      return result;
+    }
+
+    function encryptAffine() {
+      const text = document.getElementById("text").value;
+      const a = parseInt(document.getElementById("a").value);
+      const b = parseInt(document.getElementById("b").value);
+
+      if (gcd(a, 26) !== 1) {
+        document.getElementById("output").value = "Invalid key a. It must be coprime with 26.";
+        return;
+      }
+
+      document.getElementById("output").value = affineEncrypt(text, a, b);
+    }
+
+    function decryptAffine() {
+      const text = document.getElementById("text").value;
+      const a = parseInt(document.getElementById("a").value);
+      const b = parseInt(document.getElementById("b").value);
+
+      document.getElementById("output").value = affineDecrypt(text, a, b);
+    }
+  </script>
+</body>
+</html>
