@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES-CMAC String & Hex</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f2f5; }
+        .card { background: white; max-width: 600px; margin: auto; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #333; margin-top: 0; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        select, input, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: monospace; }
+        button { width: 100%; background: #28a745; color: white; border: none; padding: 12px; margin-top: 20px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #218838; }
+        .result-box { margin-top: 25px; padding: 15px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; word-break: break-all; }
+        small { color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>AES-CMAC Calculator</h2>
+
+    <label>Key Input Format:</label>
+    <select id="keyFormat">
+        <option value="string">Plaintext String (Autopad/Truncate to 16 bytes)</option>
+        <option value="hex" selected>Hexadecimal (32 chars / 16 bytes)</option>
+    </select>
+
+    <label>Secret Key:</label>
+    <input type="text" id="keyInput" value="2b7e151628aed2a6abf7158809cf4f3c">
+    <small id="keyHint">Must be 32 hex characters for Hex mode.</small>
+
+    <label>Message Format:</label>
+    <select id="msgFormat">
+        <option value="string">Plaintext String</option>
+        <option value="hex" selected>Hexadecimal</option>
+    </select>
+
+    <label>Message:</label>
+    <textarea id="msgInput" rows="3">6bc1bee22e409f96e93d7e117393172a</textarea>
+
+    <button onclick="calculate()">Calculate CMAC Tag</button>
+
+    <div class="result-box" id="resultArea">
+        Result will appear here...
+    </div>
+</div>
+
+<script>
+    // --- Helper Functions for Bitwise Operations ---
+    function bitwiseLeftShift(wordArray) {
+        let words = wordArray.words;
+        let carry = 0;
+        for (let i = words.length - 1; i >= 0; i--) {
+            let currentWord = words[i];
+            words[i] = (currentWord << 1) | carry;
+            carry = (currentWord >>> 31);
+        }
+    }
+
+    function xor(wa1, wa2) {
+        let words1 = wa1.words;
+        let words2 = wa2.words;
+        let newWords = [];
+        for (let i = 0; i < words1.length; i++) {
+            newWords.push(words1[i] ^ words2[i]);
+        }
+        return CryptoJS.lib.WordArray.create(newWords);
+    }
+
+    // --- Subkey Generation ---
+    function generateSubkeys(keyWA) {
+        const Rb = CryptoJS.enc.Hex.parse("00000000000000000000000000000087");
+        const zero = CryptoJS.enc.Hex.parse("00000000000000000000000000000000");
+
+        let L = CryptoJS.AES.encrypt(zero, keyWA, {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.NoPadding
+        }).ciphertext;
+
+        let K1 = L.clone();
+        let msbL = (L.words[0] >>> 31) & 1;
+        bitwiseLeftShift(K1);
+        if (msbL === 1) K1 = xor(K1, Rb);
+
+        let K2 = K1.clone();
+        let msbK1 = (K1.words[0] >>> 31) & 1;
+        bitwiseLeftShift(K2);
+        if (msbK1 === 1) K2 = xor(K2, Rb);
+
+        return { K1, K2 };
+    }
+
+    // --- Core CMAC logic ---
+    function computeCMAC(keyWA, msgWA) {
+        const { K1, K2 } = generateSubkeys(keyWA);
+        const blockSize = 16;
+        const msgHex = CryptoJS.enc.Hex.stringify(msgWA);
+        const mLen = msgHex.length / 2;
+
+        let n = Math.ceil(mLen / blockSize);
+        if (n === 0) n = 1;
+
+        let flag = (mLen > 0 && mLen % blockSize === 0);
+        let M_last;
+
+        let start = (n - 1) * blockSize * 2;
+        let lastPart = msgHex.substring(start);
+
+        if (flag) {
+            M_last = xor(CryptoJS.enc.Hex.parse(lastPart), K1);
+        } else {
+            lastPart += "80";
+            while (lastPart.length < blockSize * 2) lastPart += "00";
+            M_last = xor(CryptoJS.enc.Hex.parse(lastPart), K2);
+        }
+
+        let X = CryptoJS.enc.Hex.parse("00000000000000000000000000000000");
+        for (let i = 0; i < n - 1; i++) {
+            let Mi = CryptoJS.enc.Hex.parse(msgHex.substring(i * 32, (i + 1) * 32));
+            let Y = xor(X, Mi);
+            X = CryptoJS.AES.encrypt(Y, keyWA, { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.NoPadding }).ciphertext;
+        }
+
+        let finalY = xor(X, M_last);
+        return CryptoJS.AES.encrypt(finalY, keyWA, { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.NoPadding }).ciphertext;
+    }
+
+    // --- UI Logic ---
+    function calculate() {
+        const keyRaw = document.getElementById('keyInput').value;
+        const keyFmt = document.getElementById('keyFormat').value;
+        const msgRaw = document.getElementById('msgInput').value;
+        const msgFmt = document.getElementById('msgFormat').value;
+        const resultArea = document.getElementById('resultArea');
+
+        try {
+            let keyWA;
+            if (keyFmt === 'hex') {
+                if (!/^[0-9a-fA-F]{32}$/.test(keyRaw)) {
+                    throw new Error("Hex Key must be exactly 32 hex characters (16 bytes).");
+                }
+                keyWA = CryptoJS.enc.Hex.parse(keyRaw);
+            } else {
+                // String Key: Ensure it is exactly 16 bytes for AES-128
+                keyWA = CryptoJS.enc.Utf8.parse(keyRaw);
+                if (keyWA.sigBytes > 16) {
+                    keyWA = CryptoJS.lib.WordArray.create(keyWA.words.slice(0, 4)); // Truncate
+                    keyWA.sigBytes = 16;
+                } else if (keyWA.sigBytes < 16) {
+                    while (keyWA.sigBytes < 16) keyWA.concat(CryptoJS.enc.Hex.parse("00")); // Pad
+                }
+            }
+
+            let msgWA = (msgFmt === 'hex') ? CryptoJS.enc.Hex.parse(msgRaw) : CryptoJS.enc.Utf8.parse(msgRaw);
+
+            const tag = computeCMAC(keyWA, msgWA);
+            resultArea.innerHTML = `<strong>CMAC Tag (Hex):</strong><br>${tag.toString().toUpperCase()}`;
+            resultArea.style.color = "black";
+
+        } catch (e) {
+            resultArea.innerHTML = "<strong>Error:</strong> " + e.message;
+            resultArea.style.color = "red";
+        }
+    }
+</script>
+
+</body>
+</html>
